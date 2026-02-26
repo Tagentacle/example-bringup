@@ -1,11 +1,12 @@
-# Tagentacle System Launch Configuration
+# Tagentacle Chatbot System Launch Configuration
+# Topology: MCP Server + Inference + Memory + Agent + Frontend
 # This file defines the system topology: which nodes to launch,
 # their startup parameters, and environment credentials.
 
 [daemon]
 addr = "127.0.0.1:19999"
 
-# --- Node Definitions ---
+# --- Node Definitions (launched in dependency order) ---
 
 [[nodes]]
 name = "mcp_server_node"
@@ -14,26 +15,40 @@ command = "python server.py"
 description = "Weather MCP Server providing tool calls over the bus"
 
 [[nodes]]
-name = "weather_agent_node"
+name = "inference_node"
+package = "example_inference"
+command = "python inference.py"
+description = "Stateless LLM gateway — proxies to OpenAI-compatible API"
+
+[[nodes]]
+name = "memory_node"
+package = "example_memory"
+command = "python memory.py"
+description = "Session persistence — subscribes /memory/latest, saves to disk"
+
+[[nodes]]
+name = "agent_node"
 package = "example_agent"
 command = "python client.py"
-description = "Agent that calls weather tools via MCP-over-bus"
-depends_on = ["mcp_server_node"]  # Wait for server to be ready
-startup_delay = 2  # seconds to wait after dependency is launched
+description = "Chatbot agent with full agentic loop and MCP tool use"
+depends_on = ["mcp_server_node", "inference_node"]
+startup_delay = 2
+
+[[nodes]]
+name = "frontend_node"
+package = "example_frontend"
+command = "python frontend.py"
+description = "Gradio web UI for chatbot interaction"
+depends_on = ["agent_node"]
+startup_delay = 1
 
 # --- Parameter Injection ---
-# These will be injected as environment variables to all nodes
 
 [parameters]
 TAGENTACLE_DAEMON_URL = "tcp://127.0.0.1:19999"
-# API_KEY = "sk-..."          # Uncomment and set for production
-# BASE_URL = "https://..."    # LLM endpoint override
+INFERENCE_MODEL = "moonshotai/kimi-k2.5"
 
 # --- Secrets File ---
 # Secrets are loaded from a separate git-ignored file and injected as env vars.
 [secrets]
 secrets_file = "config/secrets.toml"
-
-# --- Tool Allow-Lists (per node) ---
-# [parameters.tools.weather_agent_node]
-# allowed = ["get_weather", "publish_to_topic"]

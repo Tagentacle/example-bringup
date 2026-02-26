@@ -24,3 +24,12 @@ git = "https://github.com/Tagentacle/example-agent.git"
 
 [workspace.repos.example_mcp_server]
 git = "https://github.com/Tagentacle/example-mcp-server.git"
+
+[workspace.repos.example_inference]
+git = "https://github.com/Tagentacle/example-inference.git"
+
+[workspace.repos.example_memory]
+git = "https://github.com/Tagentacle/example-memory.git"
+
+[workspace.repos.example_frontend]
+git = "https://github.com/Tagentacle/example-frontend.git"
