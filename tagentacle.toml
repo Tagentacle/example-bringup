@@ -13,6 +13,12 @@ config = "launch/system_launch.toml"
 # `tagentacle setup dep --all`, the CLI will auto-clone these repos
 # into the workspace's src/ directory if they are not already present.
 
+[workspace.repos.python_sdk_core]
+git = "https://github.com/Tagentacle/python-sdk-core.git"
+
+[workspace.repos.python_sdk_mcp]
+git = "https://github.com/Tagentacle/python-sdk-mcp.git"
+
 [workspace.repos.example_agent]
 git = "https://github.com/Tagentacle/example-agent.git"
 
