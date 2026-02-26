@@ -1,0 +1,20 @@
+[package]
+name = "example_bringup"
+version = "0.1.0"
+description = "System bringup package: topology orchestration and parameter injection"
+authors = ["Tagentacle Contributors"]
+type = "bringup"
+
+[launch]
+config = "launch/system_launch.toml"
+
+# --- Workspace Repository Dependencies ---
+# When a user clones this bringup pkg into a workspace and runs
+# `tagentacle setup dep --all`, the CLI will auto-clone these repos
+# into the workspace's src/ directory if they are not already present.
+
+[workspace.repos.example_agent]
+git = "https://github.com/Tagentacle/example-agent.git"
+
+[workspace.repos.example_mcp_server]
+git = "https://github.com/Tagentacle/example-mcp-server.git"

@@ -1,0 +1,5 @@
+# Actual secrets file; never committed to version control
+config/secrets.toml
+__pycache__/
+.venv/
+*.pyc
