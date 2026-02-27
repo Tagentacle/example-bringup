@@ -22,6 +22,12 @@ git = "https://github.com/Tagentacle/python-sdk-mcp.git"
 [workspace.repos.example_agent]
 git = "https://github.com/Tagentacle/example-agent.git"
 
+[workspace.repos.mcp_interfaces]
+git = "https://github.com/Tagentacle/mcp-interfaces.git"
+
+[workspace.repos.mcp_gateway]
+git = "https://github.com/Tagentacle/mcp-gateway.git"
+
 [workspace.repos.example_mcp_server]
 git = "https://github.com/Tagentacle/example-mcp-server.git"
 
