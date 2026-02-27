@@ -2,6 +2,11 @@
 # Topology: MCP Server + Inference + Memory + Agent + Frontend
 # This file defines the system topology: which nodes to launch,
 # their startup parameters, and environment credentials.
+#
+# MCP Architecture:
+#   - MCP Server nodes expose Streamable HTTP endpoints directly
+#   - Agent discovers servers via /mcp/directory Topic or MCP_SERVER_URL env
+#   - Optional: Gateway Node adapts stdio MCP servers to HTTP
 
 [daemon]
 addr = "127.0.0.1:19999"
@@ -12,7 +17,7 @@ addr = "127.0.0.1:19999"
 name = "mcp_server_node"
 package = "example_mcp_server"
 command = "python server.py"
-description = "Weather MCP Server providing tool calls over the bus"
+description = "Weather MCP Server (Streamable HTTP on port 8200)"
 
 [[nodes]]
 name = "inference_node"
@@ -32,7 +37,7 @@ package = "example_agent"
 command = "python client.py"
 description = "Chatbot agent with full agentic loop and MCP tool use"
 depends_on = ["mcp_server_node", "inference_node"]
-startup_delay = 2
+startup_delay = 3
 
 [[nodes]]
 name = "frontend_node"
@@ -47,6 +52,8 @@ startup_delay = 1
 [parameters]
 TAGENTACLE_DAEMON_URL = "tcp://127.0.0.1:19999"
 INFERENCE_MODEL = "moonshotai/kimi-k2.5"
+MCP_PORT = "8200"
+MCP_SERVER_URL = "http://127.0.0.1:8200/mcp"
 
 # --- Secrets File ---
 # Secrets are loaded from a separate git-ignored file and injected as env vars.
