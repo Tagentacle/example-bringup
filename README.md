@@ -46,3 +46,15 @@ cp config/secrets.toml.example config/secrets.toml
 ```
 
 Secrets are automatically injected as environment variables to all launched nodes.
+
+## Project Documentation
+
+This bringup repo sits at the top of the dependency graph, making it the natural home for project-level documents:
+
+| Document | Description |
+|----------|-------------|
+| [docs/PROJECT_FULL_STACK_V1.md](docs/PROJECT_FULL_STACK_V1.md) | Full-stack-v1 master plan: topology, phases, decisions |
+| [docs/ALIGNMENT_ANALYSIS.md](docs/ALIGNMENT_ANALYSIS.md) | Philosophy ↔ feature alignment analysis (Q1-Q11) |
+| [docs/KANBAN.md](docs/KANBAN.md) | Progress tracking board |
+
+→ [GitHub Project board](https://github.com/orgs/Tagentacle/projects/1)
