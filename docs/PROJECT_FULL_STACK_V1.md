@@ -74,6 +74,11 @@
 15. **Q10**: TACL 拆为独立包 **python-sdk-tacl**, 换用 **PyJWT** (精选而非发明)
 16. **Q11**: `PermissionMCPServerNode` → **TACLAuthority**
 
+### 数据流 & 可观察性决议 (2026-03-16, ALIGNMENT_ANALYSIS Q12-Q13)
+
+17. **Q12**: URL vs msg 判断标准 — 流式/大payload→直连(URL publish), 离散/小→bus(topic/service)。Inference Node 双入口。
+18. **Q13**: SDK (python-sdk-agent) 提供**事件钩子**不绑定 topic。Topic 命名/绑定全部在 bringup config 层，无 fallback 默认值。
+
 ## 依赖顺序 & 具体 Feat 列表
 
 ```
@@ -87,8 +92,8 @@ Phase 0: 讨论 & 决议 ✅ DONE
 | mcp-interfaces | [#1](mcp-interfaces/feat-full-stack-schemas_1.md) | `ChatInput.json`, `ChatOutput.json`, `MemorySnapshot.json`, `AgentMessage.json` 新增; tagentacle.toml 映射注册 |
 | python-sdk-mcp | [#1](python-sdk-mcp/feat-subscribe-levels_1.md) | `subscribe_topic(topic, level)` level 参数扩展; `set_subscription_level(topic, level)` 新 MCP tool; sidecar 模式同进程信任 |
 | python-sdk-mcp | [#2](python-sdk-mcp/docs-mcp-server-positioning_2.md) | **MCPServerNode 废除 → MCPServerComponent 组件化** (Q8); 组合模式文档 (Q2); MCP Gateway README 传输层定位 |
-| python-sdk-mcp | NEW | **TACL 代码拆出** → 新建 python-sdk-tacl; 换用 PyJWT; PermissionMCPServerNode → TACLAuthority (Q10, Q11) |
-| python-sdk-agent | NEW | **新建包**: MessageQueue, InferenceMux, ContextFactory 可复用组件 (Q6) |
+| python-sdk-mcp | NEW | **TACL 代码拆出** → [python-sdk-tacl #1](https://github.com/Tagentacle/python-sdk-tacl/issues/1); 换用 PyJWT; PermissionMCPServerNode → TACLAuthority (Q10, Q11) |
+| python-sdk-agent | NEW | **新建包**: [python-sdk-agent #1](https://github.com/Tagentacle/python-sdk-agent/issues/1) MessageQueue, InferenceMux (事件钩子 Q13), ContextFactory 可复用组件 (Q6) |
 | example-inference | [#1](example-inference/feat-mcp-sampling_1.md) | Agent 端: MCP Client 注册 sampling handler → 内部 `call_service("/inference/chat", msgs)` → 返回 sampling result; Inference 本身不改 |
 
 ### Phase 2: Agent 重构

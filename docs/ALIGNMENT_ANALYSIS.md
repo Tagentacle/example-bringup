@@ -219,7 +219,7 @@ v1 范围: 仅 MCP tool 级授权。未来可扩展 Bus 级鉴权等。
 
 ---
 
-### 决议清单 (Q6-Q11)
+### 决议清单 (Q6-Q13)
 
 | # | 决议 | 影响 |
 |---|------|------|
@@ -229,3 +229,45 @@ v1 范围: 仅 MCP tool 级授权。未来可扩展 Bus 级鉴权等。
 | Q9 | LifecycleNode lifecycle event 保留 (如 ROS 2) | 不变 |
 | Q10 | TACL 拆为 python-sdk-tacl, 换用 PyJWT | python-sdk-mcp 瘦身, 新建仓库 |
 | Q11 | PermissionMCPServerNode → TACLAuthority | python-sdk-tacl |
+| Q12 | URL vs msg: 数据流特征决定 (流式/大→直连, 离散/小→bus) | Inference Node 双入口, /mcp/directory 模式复用 |
+| Q13 | SDK 提供事件钩子, 不绑定 topic。Topic 命名/绑定全部在 bringup config 层 | python-sdk-agent 零 topic 硬编码, example-agent 通过 config 决定 |
+
+---
+
+## 第三轮讨论 (2026-03-16)
+
+### Q12: URL vs msg 判断标准 ✅
+
+**问题**: Inference Node 要不要也 publish URL (像 MCP Server)?  什么时候走 bus message, 什么时候走 URL 直连?
+
+**判断标准**: daemon 需要理解内容吗?
+- **不需要 (可路由)** → Bus message (topic 或 service)
+- **流式/大 payload/双向会话** → URL publish (直连)
+
+**具体场景**:
+| 场景 | 模式 | 原因 |
+|------|------|------|
+| 聊天消息 | Topic (bus msg) | 多对多 pub/sub, 小 payload |
+| 推理 (非流式) | Service (bus RPC) | request/response, daemon 路由 |
+| 推理 (流式) | URL (直连 SSE) | token 流需要持久连接, P5 端到端 |
+| MCP 工具调用 | URL (MCP 会话) | 双向协议, 已有 /mcp/directory 模式 |
+
+**决议**: 两种机制都提供 (P4), 由使用者选择。Inference Node 可同时提供 bus service + URL publish。
+
+**哲学依据**: P4 提供机制不绑策略; P5 流式语义应端到端
+
+### Q13: SDK 事件钩子不绑 Topic ✅
+
+**问题**: Agent trace (工具调用、推理事件) 该怎么让 WebUI 可见?
+
+**错误做法**: SDK 里硬编码 `publish("/agent/{id}/trace", event)` → 策略嵌入内核
+
+**正确做法**:
+1. `python-sdk-agent` 的 `InferenceMux` 提供事件钩子 (Python Callable): `on_inference_start`, `on_tool_call`, `on_inference_complete`
+2. 钩子**不知道** topic 名称, 不调用 `publish()`
+3. `example-agent` (或用户自己的 Agent) 注册回调, 从 bringup config 读取 topic 名称, 决定是否/往哪 publish
+4. 没配 topic = 不发, 无 fallback 默认值
+
+**决议**: SDK 提供事件钩子机制, Topic 命名/绑定全部在 bringup config 层。
+
+**哲学依据**: P4 钩子是机制, topic 绑定是策略; P3 OS 不硬编码应用路径
