@@ -230,7 +230,8 @@ v1 范围: 仅 MCP tool 级授权。未来可扩展 Bus 级鉴权等。
 | Q10 | TACL 拆为 python-sdk-tacl, 换用 PyJWT | python-sdk-mcp 瘦身, 新建仓库 |
 | Q11 | PermissionMCPServerNode → TACLAuthority | python-sdk-tacl |
 | Q12 | URL vs msg: 数据流特征决定 (流式/大→直连, 离散/小→bus) | Inference Node 双入口, /mcp/directory 模式复用 |
-| Q13 | SDK 提供事件钩子, 不绑定 topic。Topic 命名/绑定全部在 bringup config 层 | python-sdk-agent 零 topic 硬编码, example-agent 通过 config 决定 |
+| Q13 | ⏸️ SDK 提供事件钩子, 不绑定 topic (与 Q14 耦合, 挂起) | python-sdk-agent 设计待定 |
+| Q14 | ⏸️ MCP Notification 替代 Mailbox; Agent = 纯 MCP Client (挂起) | MessageQueue/ContextFactory 可能变更, 需进一步讨论 |
 
 ---
 
@@ -256,7 +257,7 @@ v1 范围: 仅 MCP tool 级授权。未来可扩展 Bus 级鉴权等。
 
 **哲学依据**: P4 提供机制不绑策略; P5 流式语义应端到端
 
-### Q13: SDK 事件钩子不绑 Topic ✅
+### Q13: SDK 事件钩子不绑 Topic ⏸️ (与 Q14 耦合, 挂起)
 
 **问题**: Agent trace (工具调用、推理事件) 该怎么让 WebUI 可见?
 
@@ -268,6 +269,23 @@ v1 范围: 仅 MCP tool 级授权。未来可扩展 Bus 级鉴权等。
 3. `example-agent` (或用户自己的 Agent) 注册回调, 从 bringup config 读取 topic 名称, 决定是否/往哪 publish
 4. 没配 topic = 不发, 无 fallback 默认值
 
-**决议**: SDK 提供事件钩子机制, Topic 命名/绑定全部在 bringup config 层。
+**方向**: SDK 提供事件钩子机制, Topic 命名/绑定全部在 bringup config 层。
 
 **哲学依据**: P4 钩子是机制, topic 绑定是策略; P3 OS 不硬编码应用路径
+
+**挂起原因**: Q14 (MCP Notification 替代 Mailbox) 可能让事件钩子方案根本变化。若 Agent 变成纯 MCP Client, 事件通过 MCP Notification 传递, 则不需要 Python 层的 Callable 钩子。
+
+### Q14: MCP Notification 替代 Mailbox ⏸️ (挂起)
+
+**问题**: MCP Notification 能否替代 MessageQueue? 让 MCP 成为 Agent 与 Tagentacle 交互的唯一中间层?
+
+**初步分析**:
+- Agent 不再继承 Node, 变为纯 MCP Client
+- MessageQueue → MCP notification buffer (转移, 非消失)
+- ContextFactory 保留但输入从 mailbox_items → notifications
+- read_mailbox tool 真消除, 内置 tools 概念消除
+- 需要 TagentacleMCPServer 支持向连接的 Client 发送 topic 消息 Notification
+
+**挂起原因**: 需进一步讨论 Notification 格式、ContextFactory 变化、与 new_agent_node.md 的兼容性
+
+**参考**: `internal/architecture-decisions/new_agent_node.md`
