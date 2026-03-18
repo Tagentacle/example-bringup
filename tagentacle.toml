@@ -19,6 +19,9 @@ git = "https://github.com/Tagentacle/python-sdk-core.git"
 [workspace.repos.python_sdk_mcp]
 git = "https://github.com/Tagentacle/python-sdk-mcp.git"
 
+[workspace.repos.python_sdk_tacl]
+git = "https://github.com/Tagentacle/python-sdk-tacl.git"
+
 [workspace.repos.example_agent]
 git = "https://github.com/Tagentacle/example-agent.git"
 
@@ -39,3 +42,9 @@ git = "https://github.com/Tagentacle/example-memory.git"
 
 [workspace.repos.example_frontend]
 git = "https://github.com/Tagentacle/example-frontend.git"
+
+[workspace.repos.shell_server]
+git = "https://github.com/Tagentacle/shell-server.git"
+
+[workspace.repos.container_orchestrator]
+git = "https://github.com/Tagentacle/container-orchestrator.git"
