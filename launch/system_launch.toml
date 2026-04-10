@@ -88,7 +88,7 @@ startup_delay = 1
 
 [parameters]
 TAGENTACLE_DAEMON_URL = "tcp://127.0.0.1:19999"
-INFERENCE_MODEL = "moonshotai/kimi-k2.5"
+INFERENCE_MODEL = "google/gemma-4-31b-it:free"
 MCP_SERVER_URL = "http://127.0.0.1:8200/mcp"
 
 # Per-node MCP port (avoids global MCP_PORT collision)
