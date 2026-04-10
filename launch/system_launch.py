@@ -44,6 +44,12 @@ async def run_process(cmd: str, cwd: str, name: str, env: dict = None):
     """Run a subprocess with output logging."""
     print(f"[{name}] Starting: {cmd}")
     merged_env = {**os.environ, **(env or {})}
+
+    # Use package venv if available
+    venv_python = os.path.join(cwd, ".venv", "bin", "python")
+    if os.path.isfile(venv_python) and cmd.startswith("python "):
+        cmd = venv_python + cmd[6:]  # Replace 'python' with venv python path
+
     process = await asyncio.create_subprocess_shell(
         cmd, cwd=cwd,
         stdout=asyncio.subprocess.PIPE,
@@ -130,14 +136,27 @@ async def main():
 
     processes = []
 
-    # 1. Start Daemon
+    # 1. Start Daemon (skip if already running)
     daemon_addr = config.get("daemon", {}).get("addr", "127.0.0.1:19999")
-    daemon_proc = await run_process(
-        f"tagentacle daemon --addr {daemon_addr}",
-        WORKSPACE_DIR, "DAEMON"
-    )
-    processes.append(("DAEMON", daemon_proc))
-    await asyncio.sleep(3)
+    daemon_host, daemon_port = daemon_addr.rsplit(":", 1)
+    daemon_running = False
+    try:
+        import socket
+        with socket.create_connection((daemon_host, int(daemon_port)), timeout=1.0):
+            daemon_running = True
+            print(f"[BRINGUP] Daemon already running at {daemon_addr}")
+    except OSError:
+        pass
+
+    if not daemon_running:
+        daemon_proc = await run_process(
+            f"tagentacle daemon --addr {daemon_addr}",
+            WORKSPACE_DIR, "DAEMON"
+        )
+        processes.append(("DAEMON", daemon_proc))
+        await asyncio.sleep(3)
+    else:
+        await asyncio.sleep(1)
 
     # 2. Launch nodes in order (respecting depends_on)
     nodes = config.get("nodes", [])
