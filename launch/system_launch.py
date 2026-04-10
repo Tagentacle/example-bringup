@@ -156,8 +156,16 @@ async def main():
                 print(f"[{name}] Waiting for dependency '{dep}'...")
                 await asyncio.sleep(delay)
 
+        # Per-node env: check for NAME_KEY pattern in parameters
+        node_env = dict(inject_env)
+        prefix = name.upper() + "_"
+        for k, v in params.items():
+            if k.startswith(prefix):
+                real_key = k[len(prefix):]
+                node_env[real_key] = str(v)
+
         pkg_dir = resolve_package_dir(package)
-        proc = await run_process(command, pkg_dir, name, env=inject_env)
+        proc = await run_process(command, pkg_dir, name, env=node_env)
         processes.append((name, proc))
         launched.add(name)
 

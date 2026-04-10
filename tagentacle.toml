@@ -51,3 +51,9 @@ git = "https://github.com/Tagentacle/shell-server.git"
 
 [workspace.repos.container_orchestrator]
 git = "https://github.com/Tagentacle/container-orchestrator.git"
+
+[workspace.repos.mock_external_server]
+git = "https://github.com/Tagentacle/mock-external-server.git"
+
+[workspace.repos.bus_connector_mcp]
+git = "https://github.com/Tagentacle/bus-connector-mcp.git"

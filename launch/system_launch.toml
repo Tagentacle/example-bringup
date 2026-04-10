@@ -1,23 +1,42 @@
-# Tagentacle Chatbot System Launch Configuration
-# Topology: MCP Server + Inference + Memory + Agent + Frontend
+# Tagentacle Full-Stack System Launch Configuration
+# Topology: MCP Servers + Inference + Memory + Gateway + Dual Agents + Frontend
 # This file defines the system topology: which nodes to launch,
 # their startup parameters, and environment credentials.
-#
-# MCP Architecture:
-#   - MCP Server nodes expose Streamable HTTP endpoints directly
-#   - Agent discovers servers via /mcp/directory Topic or MCP_SERVER_URL env
-#   - Optional: Gateway Node adapts stdio MCP servers to HTTP
 
 [daemon]
 addr = "127.0.0.1:19999"
 
-# --- Node Definitions (launched in dependency order) ---
+# --- MCP Servers ---
 
 [[nodes]]
 name = "mcp_server_node"
 package = "example_mcp_server"
 command = "python server.py"
 description = "Weather MCP Server (Streamable HTTP on port 8200)"
+
+[[nodes]]
+name = "shell_server"
+package = "shell_server"
+command = "python shell_server.py"
+description = "Shell command execution MCP Server"
+
+[[nodes]]
+name = "mock_external"
+package = "mock_external_server"
+command = "python mock_server.py --http 8400"
+description = "Mock external MCP Server for gateway testing (HTTP on port 8400)"
+
+# --- Gateway ---
+
+[[nodes]]
+name = "mcp_gateway"
+package = "mcp_gateway"
+command = "python gateway.py"
+description = "Transport relay — stdio→HTTP + remote directory publishing"
+depends_on = ["mock_external"]
+startup_delay = 2
+
+# --- Infrastructure ---
 
 [[nodes]]
 name = "inference_node"
@@ -32,19 +51,37 @@ command = "python memory.py"
 description = "Session persistence — subscribes /memory/latest, saves to disk"
 
 [[nodes]]
-name = "agent_node"
+name = "container_orchestrator"
+package = "container_orchestrator"
+command = "python orchestrator.py"
+description = "Container lifecycle management — Podman/Docker backend"
+
+# --- Agents ---
+
+[[nodes]]
+name = "agent_node_1"
 package = "example_agent"
 command = "python client.py"
-description = "Chatbot agent with full agentic loop and MCP tool use"
-depends_on = ["mcp_server_node", "inference_node"]
+description = "Agent A — coordinator, user-facing"
+depends_on = ["mcp_server_node", "shell_server", "inference_node", "mcp_gateway"]
 startup_delay = 3
+
+[[nodes]]
+name = "agent_node_2"
+package = "example_agent"
+command = "python client.py"
+description = "Agent B — executor, task receiver"
+depends_on = ["mcp_server_node", "shell_server", "inference_node"]
+startup_delay = 1
+
+# --- Frontend ---
 
 [[nodes]]
 name = "frontend_node"
 package = "example_frontend"
 command = "python frontend.py"
-description = "Gradio web UI for chatbot interaction"
-depends_on = ["agent_node"]
+description = "Gradio multi-agent monitor UI"
+depends_on = ["agent_node_1", "agent_node_2"]
 startup_delay = 1
 
 # --- Parameter Injection ---
@@ -55,7 +92,12 @@ INFERENCE_MODEL = "moonshotai/kimi-k2.5"
 MCP_PORT = "8200"
 MCP_SERVER_URL = "http://127.0.0.1:8200/mcp"
 
+# Agent-specific parameters (env vars per node name convention)
+AGENT_NODE_1_AGENT_ID = "agent_1"
+AGENT_NODE_1_AGENT_ROLE = "coordinator"
+AGENT_NODE_2_AGENT_ID = "agent_2"
+AGENT_NODE_2_AGENT_ROLE = "executor"
+
 # --- Secrets File ---
-# Secrets are loaded from a separate git-ignored file and injected as env vars.
 [secrets]
 secrets_file = "config/secrets.toml"
