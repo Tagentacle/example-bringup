@@ -22,6 +22,9 @@ git = "https://github.com/Tagentacle/python-sdk-mcp.git"
 [workspace.repos.python_sdk_tacl]
 git = "https://github.com/Tagentacle/python-sdk-tacl.git"
 
+[workspace.repos.python_sdk_agent]
+git = "https://github.com/Tagentacle/python-sdk-agent.git"
+
 [workspace.repos.example_agent]
 git = "https://github.com/Tagentacle/example-agent.git"
 
