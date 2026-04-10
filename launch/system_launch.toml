@@ -89,8 +89,11 @@ startup_delay = 1
 [parameters]
 TAGENTACLE_DAEMON_URL = "tcp://127.0.0.1:19999"
 INFERENCE_MODEL = "moonshotai/kimi-k2.5"
-MCP_PORT = "8200"
 MCP_SERVER_URL = "http://127.0.0.1:8200/mcp"
+
+# Per-node MCP port (avoids global MCP_PORT collision)
+MCP_SERVER_NODE_MCP_PORT = "8200"
+SHELL_SERVER_MCP_PORT = "8300"
 
 # Agent-specific parameters (env vars per node name convention)
 AGENT_NODE_1_AGENT_ID = "agent_1"
