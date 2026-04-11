@@ -33,8 +33,6 @@ name = "mcp_gateway"
 package = "mcp_gateway"
 command = "python gateway.py"
 description = "Transport relay — stdio→HTTP + remote directory publishing"
-depends_on = ["mock_external"]
-startup_delay = 2
 
 # --- Infrastructure ---
 
@@ -63,16 +61,12 @@ name = "agent_node_1"
 package = "example_agent"
 command = "python client.py"
 description = "Agent A — coordinator, user-facing"
-depends_on = ["mcp_server_node", "shell_server", "inference_node", "mcp_gateway"]
-startup_delay = 3
 
 [[nodes]]
 name = "agent_node_2"
 package = "example_agent"
 command = "python client.py"
 description = "Agent B — executor, task receiver"
-depends_on = ["mcp_server_node", "shell_server", "inference_node"]
-startup_delay = 1
 
 # --- Frontend ---
 
@@ -81,8 +75,6 @@ name = "frontend_node"
 package = "example_frontend"
 command = "python frontend.py"
 description = "Gradio multi-agent monitor UI"
-depends_on = ["agent_node_1", "agent_node_2"]
-startup_delay = 1
 
 # --- Parameter Injection ---
 
