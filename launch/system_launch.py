@@ -13,6 +13,7 @@ Usage:
 
 import asyncio
 import os
+import signal
 import sys
 
 try:
@@ -56,6 +57,7 @@ async def run_process(cmd: str, cwd: str, name: str, env: dict = None):
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
         env=merged_env,
+        start_new_session=True,  # each child gets its own process group
     )
 
     async def log_output():
@@ -142,6 +144,16 @@ async def main():
             print(f"[BRINGUP] Secrets file not found: {secrets_path} (skipped)")
 
     processes = []
+    shutdown_event = asyncio.Event()
+
+    def _signal_handler():
+        if not shutdown_event.is_set():
+            print("\n--- Bringup: received shutdown signal ---")
+            shutdown_event.set()
+
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, _signal_handler)
 
     # 1. Start Daemon (skip if already running)
     daemon_addr = config.get("daemon", {}).get("addr", "127.0.0.1:19999")
@@ -198,26 +210,57 @@ async def main():
         if delay > 0:
             await asyncio.sleep(delay)
 
-    # 3. Wait for agent to finish (last node)
+    # 3. Wait for last node OR shutdown signal
     if processes:
         last_name, last_proc = processes[-1]
-        print(f"[BRINGUP] Waiting for '{last_name}' to complete...")
-        await last_proc.wait()
+        print(
+            f"[BRINGUP] Waiting for '{last_name}' to complete (Ctrl-C to stop all)..."
+        )
+        wait_task = asyncio.create_task(last_proc.wait())
+        signal_task = asyncio.create_task(shutdown_event.wait())
+        done, _ = await asyncio.wait(
+            [wait_task, signal_task], return_when=asyncio.FIRST_COMPLETED
+        )
+        for t in (wait_task, signal_task):
+            if not t.done():
+                t.cancel()
 
     # 4. Graceful shutdown
+    await _shutdown_all(processes)
+
+
+async def _shutdown_all(processes, timeout: float = 10.0):
+    """SIGTERM all process groups, wait, then SIGKILL stragglers."""
+    if not processes:
+        return
     print("--- Bringup: Shutting down all nodes ---")
+
+    # Phase 1: SIGTERM every process group (reverse order)
     for name, proc in reversed(processes):
+        if proc.returncode is not None:
+            continue
         try:
-            if proc.returncode is None:
-                proc.terminate()
-                await asyncio.wait_for(proc.wait(), timeout=5.0)
-                print(f"[{name}] terminated.")
-        except (asyncio.TimeoutError, ProcessLookupError):
+            pgid = os.getpgid(proc.pid)
+            os.killpg(pgid, signal.SIGTERM)
+            print(f"[{name}] SIGTERM sent (pgid={pgid})")
+        except (ProcessLookupError, OSError):
+            pass
+
+    # Phase 2: wait for graceful exit
+    async def _wait(name, proc):
+        try:
+            await asyncio.wait_for(proc.wait(), timeout=timeout)
+            print(f"[{name}] exited (code={proc.returncode})")
+        except asyncio.TimeoutError:
+            # Phase 3: SIGKILL
             try:
-                proc.kill()
-            except ProcessLookupError:
+                pgid = os.getpgid(proc.pid)
+                os.killpg(pgid, signal.SIGKILL)
+                print(f"[{name}] SIGKILL sent")
+            except (ProcessLookupError, OSError):
                 pass
 
+    await asyncio.gather(*[_wait(n, p) for n, p in processes])
     print("--- Bringup complete ---")
 
 
@@ -225,4 +268,9 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\nBringup interrupted.")
+        print("\nBringup interrupted — cleaning up...")
+        # Processes are in their own session groups, so any survivors
+        # from asyncio.run() teardown are already handled by _shutdown_all
+        # which runs in the normal exit path (step 4).
+        # This catch is only for the case where Ctrl-C arrives before
+        # any processes are launched.
