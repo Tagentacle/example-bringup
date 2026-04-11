@@ -51,7 +51,8 @@ async def run_process(cmd: str, cwd: str, name: str, env: dict = None):
         cmd = venv_python + cmd[6:]  # Replace 'python' with venv python path
 
     process = await asyncio.create_subprocess_shell(
-        cmd, cwd=cwd,
+        cmd,
+        cwd=cwd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
         env=merged_env,
@@ -103,7 +104,11 @@ def resolve_package_dir(package_name: str) -> str:
 
 async def main():
     # Load config
-    config_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(LAUNCH_DIR, "system_launch.toml")
+    config_path = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else os.path.join(LAUNCH_DIR, "system_launch.toml")
+    )
     if not os.path.exists(config_path):
         print(f"Error: Config file not found: {config_path}")
         sys.exit(1)
@@ -128,7 +133,9 @@ async def main():
                 for k, v in secret_data.items():
                     if isinstance(v, str):
                         inject_env[k] = v
-                print(f"[BRINGUP] Loaded {len(secret_data)} secret(s) from {secrets_path}")
+                print(
+                    f"[BRINGUP] Loaded {len(secret_data)} secret(s) from {secrets_path}"
+                )
             except Exception as e:
                 print(f"[BRINGUP] Warning: failed to load secrets: {e}")
         else:
@@ -142,6 +149,7 @@ async def main():
     daemon_running = False
     try:
         import socket
+
         with socket.create_connection((daemon_host, int(daemon_port)), timeout=1.0):
             daemon_running = True
             print(f"[BRINGUP] Daemon already running at {daemon_addr}")
@@ -150,8 +158,7 @@ async def main():
 
     if not daemon_running:
         daemon_proc = await run_process(
-            f"tagentacle daemon --addr {daemon_addr}",
-            WORKSPACE_DIR, "DAEMON"
+            f"tagentacle daemon --addr {daemon_addr}", WORKSPACE_DIR, "DAEMON"
         )
         processes.append(("DAEMON", daemon_proc))
         await asyncio.sleep(3)
@@ -180,7 +187,7 @@ async def main():
         prefix = name.upper() + "_"
         for k, v in params.items():
             if k.startswith(prefix):
-                real_key = k[len(prefix):]
+                real_key = k[len(prefix) :]
                 node_env[real_key] = str(v)
 
         pkg_dir = resolve_package_dir(package)

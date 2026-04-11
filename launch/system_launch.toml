@@ -81,7 +81,6 @@ description = "Gradio multi-agent monitor UI"
 [parameters]
 TAGENTACLE_DAEMON_URL = "tcp://127.0.0.1:19999"
 INFERENCE_MODEL = "minimax/minimax-m2.7"
-MCP_SERVER_URL = "http://127.0.0.1:8200/mcp"
 
 # Per-node MCP port (avoids global MCP_PORT collision)
 MCP_SERVER_NODE_MCP_PORT = "8200"
