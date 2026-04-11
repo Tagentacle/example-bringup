@@ -57,7 +57,6 @@ async def run_process(cmd: str, cwd: str, name: str, env: dict = None):
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
         env=merged_env,
-        start_new_session=True,  # each child gets its own process group
     )
 
     async def log_output():
@@ -230,20 +229,19 @@ async def main():
 
 
 async def _shutdown_all(processes, timeout: float = 10.0):
-    """SIGTERM all process groups, wait, then SIGKILL stragglers."""
+    """Terminate all child processes, wait, then kill stragglers."""
     if not processes:
         return
     print("--- Bringup: Shutting down all nodes ---")
 
-    # Phase 1: SIGTERM every process group (reverse order)
+    # Phase 1: SIGTERM every child (reverse order)
     for name, proc in reversed(processes):
         if proc.returncode is not None:
             continue
         try:
-            pgid = os.getpgid(proc.pid)
-            os.killpg(pgid, signal.SIGTERM)
-            print(f"[{name}] SIGTERM sent (pgid={pgid})")
-        except (ProcessLookupError, OSError):
+            proc.terminate()
+            print(f"[{name}] SIGTERM sent")
+        except ProcessLookupError:
             pass
 
     # Phase 2: wait for graceful exit
@@ -254,10 +252,9 @@ async def _shutdown_all(processes, timeout: float = 10.0):
         except asyncio.TimeoutError:
             # Phase 3: SIGKILL
             try:
-                pgid = os.getpgid(proc.pid)
-                os.killpg(pgid, signal.SIGKILL)
+                proc.kill()
                 print(f"[{name}] SIGKILL sent")
-            except (ProcessLookupError, OSError):
+            except ProcessLookupError:
                 pass
 
     await asyncio.gather(*[_wait(n, p) for n, p in processes])
