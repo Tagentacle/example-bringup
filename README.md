@@ -33,7 +33,6 @@ tagentacle launch src/example-bringup/launch/system_launch.toml
 | File | Description |
 |------|-------------|
 | `launch/system_launch.toml` | Topology config: nodes, dependencies, parameters |
-| `launch/system_launch.py` | Config-driven launcher with topological ordering |
 | `config/secrets.toml` | API keys and credentials (git-ignored) |
 | `config/secrets.toml.example` | Template showing expected secret keys |
 | `tagentacle.toml` | Package manifest (type: bringup) + workspace repo deps |
@@ -47,14 +46,37 @@ cp config/secrets.toml.example config/secrets.toml
 
 Secrets are automatically injected as environment variables to all launched nodes.
 
-## Project Documentation
+## System Architecture
 
-This bringup repo sits at the top of the dependency graph, making it the natural home for project-level documents:
+```
+                     ┌── example-frontend (Gradio 监控) ──┐
+                     │                                     │
+ ┌─── [broker] ──────┼── agent_node_1 ──┐                  │
+ │    19999          │── agent_node_2 ──┤                  │
+ │                   │                  ▼                  │
+ │    Topics:        │          BusMCPNode                  │
+ │    /chat/*        │          (InboxMCP buffer            │
+ │    /memory/*      │           via MCP)                   │
+ │    /mcp/directory │                  │                  │
+ │                   │                  ▼                  │
+ │    Services:      │     ┌── shell-server (MCP) ──┐     │
+ │    /inference/chat│     │── example-mcp-server ──│     │
+ │    /memory/load   │     │── mock-external (MCP) ─│     │
+ │    /memory/list   │     └────────────────────────┘     │
+ │    /nodes/*       │                                     │
+ │    /containers/*  │  container-orchestrator              │
+ │                   │                                     │
+ │                   ├── example-inference                  │
+ │                   ├── example-memory                     │
+ │                   ├── mcp-gateway (relay mock-external)  │
+ │                   └── bus-connector-mcp (外部 MCP 桥)    │
+ └────────────────────────────────────────────────────────┘
+```
 
-| Document | Description |
-|----------|-------------|
-| [docs/PROJECT_FULL_STACK_V1.md](docs/PROJECT_FULL_STACK_V1.md) | Full-stack-v1 master plan: topology, phases, decisions |
-| [docs/ALIGNMENT_ANALYSIS.md](docs/ALIGNMENT_ANALYSIS.md) | Philosophy ↔ feature alignment analysis (Q1-Q11) |
-| [docs/KANBAN.md](docs/KANBAN.md) | Progress tracking board |
+## Org-level Documentation
 
-→ [GitHub Project board](https://github.com/orgs/Tagentacle/projects/1)
+| Document | Location |
+|----------|----------|
+| Full-stack-v1 R&D plan | [issues/PROJECT_FULL_STACK_V1.md](https://github.com/Tagentacle/Tagentacle.github.io) |
+| Philosophy alignment analysis | [issues/ALIGNMENT_ANALYSIS.md](https://github.com/Tagentacle/Tagentacle.github.io) |
+| Project kanban | [GitHub Project board](https://github.com/orgs/Tagentacle/projects/1) |

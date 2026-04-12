@@ -1,1 +1,0 @@
-../../issues/PROJECT_FULL_STACK_V1.md

@@ -1,1 +1,0 @@
-../../issues/ALIGNMENT_ANALYSIS.md
