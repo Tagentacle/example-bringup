@@ -15,9 +15,9 @@ command = "python server.py"
 description = "Weather MCP Server (Streamable HTTP on port 8200)"
 
 [[nodes]]
-name = "shell_server"
-package = "shell_server"
-command = "python shell_server.py"
+name = "shell_mcp"
+package = "shell_mcp"
+command = "python shell_mcp.py"
 description = "Shell command execution MCP Server"
 
 [[nodes]]
@@ -84,7 +84,7 @@ INFERENCE_MODEL = "minimax/minimax-m2.7"
 
 # Per-node MCP port (avoids global MCP_PORT collision)
 MCP_SERVER_NODE_MCP_PORT = "8200"
-SHELL_SERVER_MCP_PORT = "8300"
+SHELL_MCP_MCP_PORT = "8300"
 
 # Agent-specific parameters (env vars per node name convention)
 AGENT_NODE_1_AGENT_ID = "agent_1"

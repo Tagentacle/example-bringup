@@ -59,7 +59,7 @@ Secrets are automatically injected as environment variables to all launched node
  │    /memory/*      │           via MCP)                   │
  │    /mcp/directory │                  │                  │
  │                   │                  ▼                  │
- │    Services:      │     ┌── shell-server (MCP) ──┐     │
+ │    Services:      │     ┌── shell-mcp (MCP) ─────┐     │
  │    /inference/chat│     │── example-mcp-server ──│     │
  │    /memory/load   │     │── mock-external (MCP) ─│     │
  │    /memory/list   │     └────────────────────────┘     │
