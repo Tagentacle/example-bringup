@@ -1,12 +1,17 @@
 # Tagentacle Full-Stack System Launch Configuration
 # Topology: MCP Servers + Inference + Memory + Gateway + Dual Agents + Frontend
-# This file defines the system topology: which nodes to launch,
-# their startup parameters, and environment credentials.
+#
+# Launched by:  tagentacle launch launch/system_launch.toml
+#
+# Startup order is derived from `depends_on`. `startup_delay` is a
+# coarse pause (seconds) after a node is spawned, before launching its
+# dependents — used when the dependency advertises readiness lazily
+# (e.g. agents waiting for /mcp/directory to settle).
 
 [daemon]
 addr = "127.0.0.1:19999"
 
-# --- MCP Servers ---
+# --- MCP Servers (no inter-deps) ---
 
 [[nodes]]
 name = "mcp_server_node"
@@ -26,13 +31,15 @@ package = "mock_external_server"
 command = "python mock_server.py --http 8400"
 description = "Mock external MCP Server for gateway testing (HTTP on port 8400)"
 
-# --- Gateway ---
+# --- Gateway: relays mock_external + remote-directory entries ---
 
 [[nodes]]
 name = "mcp_gateway"
 package = "mcp_gateway"
 command = "python gateway.py"
 description = "Transport relay — stdio→HTTP + remote directory publishing"
+depends_on = ["mock_external"]
+startup_delay = 2
 
 # --- Infrastructure ---
 
@@ -40,7 +47,7 @@ description = "Transport relay — stdio→HTTP + remote directory publishing"
 name = "inference_node"
 package = "example_inference"
 command = "python inference.py"
-description = "Stateless LLM gateway — proxies to OpenAI-compatible API"
+description = "Stateless LLM gateway — proxies to OpenAI-compatible API (FAILS without OPENAI_API_KEY + OPENAI_BASE_URL)"
 
 [[nodes]]
 name = "memory_node"
@@ -54,44 +61,53 @@ package = "container_orchestrator"
 command = "python orchestrator.py"
 description = "Container lifecycle management — Podman/Docker backend"
 
-# --- Agents ---
+# --- Agents: wait for inference + tools ---
 
 [[nodes]]
 name = "agent_node_1"
 package = "example_agent"
 command = "python client.py"
 description = "Agent A — coordinator, user-facing"
+depends_on = ["mcp_server_node", "shell_mcp", "inference_node", "mcp_gateway"]
+startup_delay = 3
 
 [[nodes]]
 name = "agent_node_2"
 package = "example_agent"
 command = "python client.py"
 description = "Agent B — executor, task receiver"
+depends_on = ["mcp_server_node", "shell_mcp", "inference_node"]
+startup_delay = 1
 
-# --- Frontend ---
+# --- Frontend: last (needs both agents) ---
 
 [[nodes]]
 name = "frontend_node"
 package = "example_frontend"
 command = "python frontend.py"
 description = "Gradio multi-agent monitor UI"
+depends_on = ["agent_node_1", "agent_node_2"]
+startup_delay = 1
 
-# --- Parameter Injection ---
+# --- Parameter Injection (env vars exposed to every node subprocess) ---
 
 [parameters]
 TAGENTACLE_DAEMON_URL = "tcp://127.0.0.1:19999"
-INFERENCE_MODEL = "minimax/minimax-m2.7"
+INFERENCE_MODEL = "moonshotai/kimi-k2.5"
 
 # Per-node MCP port (avoids global MCP_PORT collision)
 MCP_SERVER_NODE_MCP_PORT = "8200"
-SHELL_MCP_MCP_PORT = "8300"
+SHELL_MCP_MCP_PORT       = "8300"
 
-# Agent-specific parameters (env vars per node name convention)
-AGENT_NODE_1_AGENT_ID = "agent_1"
+# Agent-specific parameters (env vars per node-name convention)
+AGENT_NODE_1_AGENT_ID   = "agent_1"
 AGENT_NODE_1_AGENT_ROLE = "coordinator"
-AGENT_NODE_2_AGENT_ID = "agent_2"
+AGENT_NODE_2_AGENT_ID   = "agent_2"
 AGENT_NODE_2_AGENT_ROLE = "executor"
 
-# --- Secrets File ---
+# --- Secrets ---
+# Loaded into every node's `node.secrets` map. The file is gitignored.
+# Required keys for example-inference: OPENAI_API_KEY, OPENAI_BASE_URL.
+# Copy config/secrets.toml.example → config/secrets.toml first.
 [secrets]
 secrets_file = "config/secrets.toml"
